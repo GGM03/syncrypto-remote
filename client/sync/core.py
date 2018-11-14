@@ -95,9 +95,7 @@ class Syncrypto(Logging):
         self._debug = debug
 
         self._encrypted_new = False
-        # self._encrypted_folder_is_new = False
         self._trash_name = self._generate_trash_name()
-        # self._snapshot_trash_name = None
         self._snapshot_tree_name = '.filetree'
         self._encrypted_filetree_entry = None
 
@@ -126,18 +124,6 @@ class Syncrypto(Logging):
                         if line == b"" or line[0] == b'#':
                             continue
                         self.rule_set.add_rule_by_string(line.decode("ascii"))
-
-    # def debug(self, message):
-    #     if self._debug:
-    #         print("[DEBUG]", message)
-    #
-    # @staticmethod
-    # def info(message):
-    #     print(message)
-    #
-    # @staticmethod
-    # def error(message):
-    #     print(message, file=sys.stderr)
 
     @staticmethod
     def _generate_trash_name():
@@ -186,13 +172,7 @@ class Syncrypto(Logging):
             else:
                 encrypted_file.fs_pathname = self._generate_random_name(encrypted_file)
 
-                # self._generate_encrypted_path(encrypted_file)
-
-        # encrypted_path = encrypted_file.fs_path(self.encrypted_folder)
-        # mtime = plain_file.mtime
         if plain_file.isdir:
-            # if not os.path.exists(encrypted_path):
-            #     os.makedirs(encrypted_path)
             encrypted_file.copy_attr_from(plain_file)
             return encrypted_file
 
@@ -314,12 +294,6 @@ class Syncrypto(Logging):
     def _plain_rule_path(self):
         return self._plain_folder_path("rules")
 
-    # def _encrypted_rule_path(self):
-    #     return self._plain_folder_path("rules")
-
-    # def _encrypted_tree_path(self):
-    #     return self._encrypted_folder_path("filetree")
-
     def _snapshot_tree_path(self):
         return self._plain_folder_path('.filetree')
 
@@ -337,7 +311,6 @@ class Syncrypto(Logging):
 
     def _save_encrypted_tree(self):
         fp = self.client.post_tree()
-        # fp = open(self._encrypted_tree_path(), "wb")
         tree_dict = self.encrypted_tree.to_dict()
         tree_dict["snapshot_tree_name"] = self._snapshot_tree_name
         self.crypto.encrypt_fd(BytesIO(json.dumps(tree_dict).encode("utf-8")),
@@ -357,7 +330,6 @@ class Syncrypto(Logging):
                              self._snapshot_tree_name)
 
             if not os.path.exists(snapshot_tree_path):
-                # self._snapshot_tree_name = self._generate_random_name()
                 self._snapshot_tree_name = '.filetree'
 
             print(snapshot_tree_path)
@@ -382,7 +354,6 @@ class Syncrypto(Logging):
         # TODO: Redifine to send to server
         fp = open(self._snapshot_tree_path(), 'wb')
         snapshot_tree_dict = self.snapshot_tree.to_dict()
-        # snapshot_tree_dict["trash_name"] = self._trash_name
         self.crypto.compress_fd(
             BytesIO(json.dumps(snapshot_tree_dict).encode("utf-8")), fp)
         fp.close()
@@ -406,8 +377,6 @@ class Syncrypto(Logging):
                 tree_fd.seek(0)
                 snapshot_tree_dict = \
                     json.loads(tree_fd.getvalue().decode("utf-8"))
-                # if "trash_name" in snapshot_tree_dict:
-                #     self._snapshot_trash_name = snapshot_tree_dict["trash_name"]
                 self.snapshot_tree = FileTree.from_dict(snapshot_tree_dict)
             finally:
                 fp.close()
@@ -426,7 +395,6 @@ class Syncrypto(Logging):
         tree, root, target = None, None, None
         if is_in_encrypted_folder:
             tree = self.encrypted_tree
-            # root = self.encrypted_folder
             file_entry = tree.get(pathname)
             self._delete_encr(file_entry)
             self.info('Delete file {0} on encrypted drive'.format(file_entry))
@@ -469,12 +437,6 @@ class Syncrypto(Logging):
         pathnames.sort()
         encrypted_remove_list = []
         plain_remove_list = []
-        # if os.path.exists(self._plain_rule_path()) \
-        #         or os.path.exists(self._encrypted_rule_path()):
-        #     pathnames.append(".syncrypto/rules")
-        #     self.plain_tree.set(".syncrypto/rules",
-        #                         FileEntry.from_file(self._plain_rule_path(),
-        #                                             ".syncrypto/
         ignore_prefix = None
         for pathname in pathnames:
             if ignore_prefix is not None \
@@ -539,8 +501,6 @@ class Syncrypto(Logging):
         self.info(("Finished sync for folder '%s'") % (
             self.plain_folder
         ))
-        # self._trash_name = self._generate_trash_name()
-
 
     def retry_sync_folder(self, retries=3):
         for _ in range(0, 3):
@@ -553,15 +513,6 @@ class Syncrypto(Logging):
                 break
 
     def sync_folder(self, reload_tree=True):
-        # plain_folder_lock = LockFile(self.plain_folder)
-        # if plain_folder_lock.is_locked():
-        #     self.info("Acquiring the lock of plaintext folder...")
-        # else:
-        #     self.debug("Plaintext folder is not locked")
-        # # with plain_folder_lock:
-        # self.debug("Acquired the plaintext folder's lock")
-        # with plain_folder_lock:
-
             if reload_tree:
                 self.debug("Collecting remote tree")
                 self._load_encrypted_tree()
@@ -575,81 +526,3 @@ class Syncrypto(Logging):
 
             self.debug("Processing sync")
             self._do_sync_folder()
-
-
-if __name__ == '__main__':
-    pass
-# def main(args=sys.argv[1:]):
-#
-#     from .cli import parser
-#
-#     args = parser.parse_args(args=args)
-#
-#     if args.version:
-#         from .package_info import __version__
-#         print(__version__)
-#         return 1
-#
-#     password = None
-#
-#     if args.password_file is not None and os.path.exists(args.password_file):
-#         with open(args.password_file) as f:
-#             password = f.read().strip("\n")
-#
-#     rule_set = FileRuleSet()
-#
-#     if args.rule is not None:
-#         for rule_string in args.rule:
-#             rule_set.add_rule_by_string(rule_string)
-#
-#     if password is None:
-#         password = getpass('Please input the password:')
-#
-#     crypto = Crypto(password)
-#
-#     try:
-#
-#         if args.decrypt_file is not None:
-#             return cli_decrypt_file(crypto, args.decrypt_file, args.out_file)
-#
-#         if args.encrypt_file is not None:
-#             return cli_encrypt_file(crypto, args.encrypt_file, args.out_file)
-#
-#         if args.encrypted_folder is None:
-#             parser.print_help()
-#             return 1
-#
-#         syncrypto = Syncrypto(crypto,
-#                               args.encrypted_folder,
-#                               args.plaintext_folder,
-#                               rule_set=rule_set,
-#                               rule_file=args.rule_file,
-#                               debug=args.debug)
-#         if args.change_password:
-#             newpass1 = None
-#             while True:
-#                 newpass1 = getpass('Please input the new password:')
-#                 newpass2 = getpass('Please re input the new password:')
-#                 if len(newpass1) < 6:
-#                     print("new password is too short")
-#                 elif newpass1 != newpass2:
-#                     print("two inputs are not match")
-#                 else:
-#                     break
-#             syncrypto.change_password(newpass1)
-#         elif args.print_encrypted_tree:
-#             print(printable_text(syncrypto.encrypted_tree))
-#         elif args.plaintext_folder is not None:
-#             if args.interval:
-#                 while True:
-#                     syncrypto.sync_folder()
-#                     sleep(args.interval)
-#             else:
-#                 syncrypto.sync_folder()
-#         return 0
-#     except DecryptError:
-#         print("Your password is not correct")
-#         return 3
-#     except InvalidFolder as e:
-#         print(e.args[0])
-#         return 4

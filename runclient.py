@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import time
 import os
 import shutil
+from pprint import pprint
 
 from client import Syncrypto
 from client import ClientWorker
@@ -14,11 +15,11 @@ from protocol.hashing import checksum_chain
 def run(args):
     secure = secure_user_connection(args.server, debug=args.debug)
     password = checksum_chain([args.username, args.password])
-    u = ClientWorker.from_creds(secure, args.username, password)
+    u = ClientWorker.from_creds(secure, args.username, password, debug=args.debug)
     if not u.is_logged:
         print('Error loggin!')
         exit(-1)
-    c = Crypto(password)
+    c = Crypto(password, debug=args.debug)
     s = Syncrypto(u, c, args.folder, debug=args.debug)
     return s
 
@@ -48,15 +49,11 @@ if __name__ == '__main__':
         args.password = getpass.getpass(prompt='Password: ')
 
     if args.register:
-        # secure = secure_user_connection(args.server, debug=True if args.debug else False)
         secure = secure_user_connection(args.server, debug=args.debug)
-        u = ClientWorker.from_registration(secure, args.username, checksum_chain([args.username, args.password]))
+        u = ClientWorker.from_registration(secure, args.username, checksum_chain([args.username, args.password]), debug=args.debug)
         user_inf = u.get_info()
-        # if not u.is_logged:
-        #     print('Registration falied!')
-        #     exit(-1)
-        # else:
-        print(user_inf)
+        print('\n' + '#'*15)
+        pprint(user_inf)
         exit()
 
     if not os.path.exists(os.path.join(args.folder, '.syncrypto')) and not args.init:
@@ -76,31 +73,20 @@ if __name__ == '__main__':
 
         s = run(args)
         s.sync_folder()
-        print('Folder initalized!')
+        print('\n' + '#'*15)
+        print('\nFolder initalized!')
         exit()
 
     else:
         s = run(args)
         if args.once:
             s.sync_folder()
+            print('\n' + '#' * 15)
+            print('\nFolder synced!')
             exit()
 
         while True:
             s.sync_folder()
+            print('\n' + '#' * 15)
+            print('\nFolder synced!')
             time.sleep(int(args.delay))
-
-            # user = 'zloy'
-    # password = 'helloworld'
-    #
-    # secure = secure_user_connection('tcp://127.0.0.1')
-    # u = ClientWorker.from_registration(secure, user, checksum_chain([user, password]))
-    # c = Crypto(password)
-    # s = Syncrypto(u, c, '/home/zloy/PycharmProjects/syncrypto/tmp/plain', debug=2)
-    # s.sync_folder()
-
-    # import time
-    # while True:
-    #     s.sync_folder()
-    # # s.retry_sync_folder(3)
-    # time.sleep(2)
-

@@ -52,7 +52,7 @@ class SecureConnection(Logging):
             elif action == 'receive':
                 self.debug('Waiting for hadnshake')
                 user, data = self.conn.recv_multipart()
-                self.debug('Recieved handshake {0}'.format(data.hex()))
+                self.debug('Recieved handshake: {0}'.format(data.hex()))
                 self.noise.read_message(data)
         self.debug('Encrypted connection estabilished')
         # self._resp_verification()
@@ -65,7 +65,7 @@ class SecureConnection(Logging):
         self.debug('Sending own part of handshake: {0}'.format(message.hex()))
         self.conn.send(message)
         received = self.conn.recv(2048)
-        self.debug('Recieved handshake {0}'.format(received.hex()))
+        self.debug('Recieved handshake: {0}'.format(received.hex()))
         self.noise.read_message(received)
         self.debug('Encrypted connection estabilished')
 
@@ -110,39 +110,6 @@ class SecureConnection(Logging):
         data = self.noise.decrypt(message[1])
         return [user] + [data]
 
-#
-# class ServerTunnel:
-#     def __init__(self, pipe, fd):
-#         self.tunnel = pipe
-#         self.fd = fd
-#
-#     def read_in_chunks(self, chunk_size=1024*16):
-#         """Lazy function (generator) to read a file piece by piece.
-#         Default chunk size: 1k."""
-#         while True:
-#             data = self.fd.read(chunk_size)
-#             if not data:
-#                 break
-#             yield data
-#
-#     def recv(self):
-#         user, data = self.tunnel.recv_multipart()
-#         if not data == b'BEGINOFTRANSFER':
-#             return
-#
-#         user, data = self.tunnel.recv_multipart()
-#         while data != b'ENDOFTRANSFER':
-#             if data != b'BEGINOFTRANSFER':
-#                 self.fd.write(data)
-#             user, data = self.tunnel.recv_multipart()
-#         self.fd.close()
-#
-#     def send(self):
-#         user, data = self.tunnel.recv_multipart()
-#         for data in self.read_in_chunks():
-#             self.tunnel.send_multipart([user, data])
-#         self.fd.close()
-
 import io
 
 class ClientTunnel:
@@ -174,55 +141,3 @@ class ClientTunnel:
     def close(self):
         self.tunnel.send(b'ENDOFTRANSFER')
         self.tunnel.recv()
-
-# import io
-#
-# class ServerTunnel:
-#     def __init__(self, pipe, fd):
-#         self.tunnel = pipe
-#         self.fd = fd
-#
-#     def read_in_chunks(self, chunk_size=1024*16):
-#         """Lazy function (generator) to read a file piece by piece.
-#         Default chunk size: 1k."""
-#         while True:
-#             data = self.fd.read(chunk_size)
-#             if not data:
-#                 break
-#             yield data
-#
-#     def recv(self):
-#         user, data = self.tunnel.recv_multipart()
-#         if not data == b'BEGINOFTRANSFER':
-#             return
-#
-#         user, data = self.tunnel.recv_multipart()
-#         while data != b'ENDOFTRANSFER':
-#             if data != b'BEGINOFTRANSFER':
-#                 self.fd.write(data)
-#             user, data = self.tunnel.recv_multipart()
-#         self.fd.close()
-#
-#     def send(self):
-#         user, data = self.tunnel.recv_multipart()
-#         for data in self.read_in_chunks():
-#             self.tunnel.send_multipart([user, data])
-#         self.fd.close()
-#
-#
-# class ClientTunnel:
-#
-#     def __init__(self, pipe):
-#         self.tunnel = pipe
-#         self.fd = io.BytesIO()
-#         self.tunnel.send(b'BEGINOFTRANSFER')
-#
-#     def read(self, n=0):
-#         return self.tunnel.recv(n)
-#
-#     def write(self, data):
-#         self.tunnel.send(data)
-#         # self.tunnel.recv()
-#
-#     def close(self):
-#         self.tunnel.send(b'ENDOFTRANSFER')

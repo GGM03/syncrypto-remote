@@ -2,12 +2,7 @@
 import logging
 import sys
 
-# logging.basicConfig(level=logging.DEBUG)
-# logger = logging.getLogger(__name__)
-# ch = logging.StreamHandler(sys.stdout)
-# ch.setFormatter(logging.Formatter('%(name)s %(levelname)-8s %(asctime)s: "%(message)s"'))
-# logger.addHandler(ch)
-
+logging.basicConfig(level=logging.DEBUG)
 loggers = {}
 
 
@@ -19,11 +14,6 @@ def myLogger(name):
         logger = logging.getLogger(name)
         logger.propagate = False
         logger.setLevel(logging.DEBUG)
-        # now = datetime.datetime.now()
-        # handler = logging.FileHandler(
-        #     '/root/credentials/Logs/ProvisioningPython'
-        #     + now.strftime("%Y-%m-%d")
-        #     + '.log')
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter('%(name)s: %(levelname)s %(asctime)s %(message)s')
         handler.setFormatter(formatter)
@@ -39,6 +29,10 @@ class Logging:
 
     def debug(self, message):
         if self._debug:
+            self.logger.debug(message)
+
+    def trace(self, message):
+        if int(self._debug) == 2:
             self.logger.debug(message)
 
     def info(self, message):

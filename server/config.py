@@ -1,2 +1,2 @@
-DB_PATH = '/home/zloy/PycharmProjects/syncrypto/server.db'
+DB_PATH = ''
 

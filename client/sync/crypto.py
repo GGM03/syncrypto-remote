@@ -29,7 +29,7 @@ from struct import pack, unpack
 from time import time
 from io import BytesIO
 from .filetree import FileEntry
-
+from protocol.utils import Logging
 
 class InvalidKey(Exception):
     pass
@@ -43,7 +43,7 @@ class VersionNotCompatible(Exception):
     pass
 
 
-class Crypto(object):
+class Crypto(Logging):
 
     VERSION = 0x1
 
@@ -54,18 +54,21 @@ class Crypto(object):
     BUFFER_SIZE = 1024
 
 
-    def __init__(self, password, key_size=32):
-
+    def __init__(self, password, key_size=32, debug=0):
+        super(Crypto, self).__init__('FileEncryptor')
+        self._debug = debug
         self.password = password.encode("utf-8")
         self.key_size = key_size
         self.block_size = 16
 
     def encrypt_file(self, plain_path, encrypted_path, plain_file_entry):
+        self.debug('Encrypting AES file {0} to {1}'.format(plain_path,  encrypted_path))
         with open(plain_path, 'rb') as plain_fd:
             with open(encrypted_path, 'wb') as encrypted_fd:
                 self.encrypt_fd(plain_fd, encrypted_fd, plain_file_entry)
 
     def decrypt_file(self, encrypted_path, plain_path):
+        self.debug('Decrypting AES file {0} to {1}'.format(encrypted_path, plain_path,))
         with open(encrypted_path, 'rb') as encrypted_fd:
             with open(plain_path, 'wb') as plain_fd:
                 return self.decrypt_fd(encrypted_fd, plain_fd)
@@ -153,6 +156,7 @@ class Crypto(object):
             padding_length = (bs - pathname_size % bs)
             pathname_padding = padding_length * b'\0'
 
+        self.trace('Generating file header for {0}'.format(file_entry))
         flags &= 0xFF
         out_fd.write(pack(b'BB', self.VERSION, flags))
         out_fd.write(pack(b'!H', pathname_size))
@@ -166,6 +170,8 @@ class Crypto(object):
         md5 = hashlib.md5()
         rest = b''
         end = False
+
+        self.trace('Encrypting and compressing file {0}'.format(file_entry))
         while not finished:
             if compress_obj is not None:
                 buf = BytesIO()
@@ -181,6 +187,7 @@ class Crypto(object):
                             pass
                         break
                     md5.update(in_data)
+                    self.trace('Compressing file')
                     compress_data = compress_obj.compress(in_data)
                     compress_size += len(compress_data)
                     buf.write(compress_data)
@@ -204,16 +211,19 @@ class Crypto(object):
                 finished = True
             out_fd.write(encryptor.update(chunk))
 
+        self.trace('Generating file checksum for {0}'.format(file_entry))
         file_entry.digest = md5.digest()
         footer = self._build_footer(file_entry)
         md5.update(footer)
         entire_digest = md5.digest()
+        self.trace('Saving footer for {0}'.format(file_entry))
         out_fd.write(encryptor.update(footer))
         out_fd.write(encryptor.update(entire_digest))
         out_fd.write(encryptor.finalize())
         return file_entry
 
     def decrypt_fd(self, in_fd, out_fd):
+        self.trace('Extracting header for {0}'.format(in_fd))
         (version, flags, salt, pathname, decryptor) = \
             self.extract_header(in_fd)
         md5 = hashlib.md5()
@@ -228,6 +238,7 @@ class Crypto(object):
         entire_digest_check = None
         content_digest_check = None
         footer = None
+        self.trace('Decompressing and decrypting file {0}'.format(in_fd))
         while not finished:
             chunk, next_chunk = next_chunk, in_fd.read(self.BUFFER_SIZE)
             if not chunk:
@@ -263,7 +274,7 @@ class Crypto(object):
                 content_digest_check = md5.digest()
                 md5.update(footer)
                 entire_digest_check = md5.digest()
-
+        self.trace('Checking file digest for {0}'.format(in_fd))
         if file_entry is None or entire_digest is None \
                 or entire_digest_check is None or content_digest_check is None:
             raise DecryptError()

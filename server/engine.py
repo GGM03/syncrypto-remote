@@ -20,11 +20,7 @@ class ServerWorker(Logging):
         self.poller.register(self.entrypount, zmq.POLLIN)
 
     def create_secure_pipe(self, user):
-        # conn = self.ctx.socket(zmq.ROUTER)
-        # # conn.bind("tcp://*:5556")
-        # pipe_port = conn.bind_to_random_port('tcp://*')
         port, conn = bind_random_socket(context=self.ctx)
-        # self.entrypount.send_multipart([user, pipe_port.to_bytes((pipe_port.bit_length() + 7) // 8, 'big')])
         self.entrypount.send_multipart([user, port])
         self.debug('New connection created on port {0}'.format(int.from_bytes(port, 'big')))
         s = SecureConnection(conn, debug=self._debug)
@@ -72,10 +68,3 @@ class SenderTunnel:
 
     def recv(self):
         return self.pipe.recv_multipart()[1]
-
-if __name__ == '__main__':
-    pass
-    # from server.logics import ServerLogics
-    # s = ServerWorker(ServerLogics(), 'tcp://127.0.0.1:8765')
-    # s.main_loop()
-    # s = SecureConnection('tcp://127.0.0.1')

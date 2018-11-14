@@ -1,6 +1,6 @@
 from datetime import datetime
-import zmq
 import io
+from pprint import pformat
 
 # from protocol import SecureConnection
 from protocol import JsonSerializer as Serializer
@@ -31,6 +31,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         return self.s.loads(self.secure.recv())
 
@@ -44,6 +45,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         return self.s.loads(self.secure.recv())
 
@@ -57,6 +59,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         return self.s.loads(self.secure.recv())
 
@@ -68,7 +71,6 @@ class ClientWorker(Logging):
             self.treefile = info['data']['treefile']
 
         has = self.has_tree()
-
 
         if has:
             return self.get_file(self.treefile)
@@ -85,6 +87,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         resp = self.s.loads(self.secure.recv())
         if not resp or resp['status'] != 200:
@@ -109,6 +112,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         return self.s.loads(self.secure.recv())
 
@@ -122,6 +126,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         respone = self.secure.recv()
         file_response = self.s.loads(respone)
@@ -142,6 +147,7 @@ class ClientWorker(Logging):
             },
             'timestamp': int(datetime.utcnow().timestamp())
         }
+        self.trace('Sending request:\n"{0}"'.format(pformat(command)))
         self.secure.send(self.s.dumps(command))
         file_response = self.s.loads(self.secure.recv())
         if file_response['status'] != 200:
@@ -187,31 +193,3 @@ class ClientWorker(Logging):
         elif auth_data['status'] == 200:
             worker.token = auth_data['data']['token']
             return worker
-
-
-
-if __name__ == '__main__':
-    secure = secure_user_connection('tcp://127.0.0.1')
-    # u = ClientWorker(secure)
-    # dat = u.register('123456','123')
-    # print(dat)
-    # u = ClientWorker.from_creds(secure, '123456','123')
-
-    u = ClientWorker.from_registration(secure, 'zloy', 'helloworld')
-
-    # f = u.post_file('1234')
-    # f.write(b'1')
-    # f.close()
-    #
-    f = u.post_file('4321')
-    f.write(b'2')
-    f.close()
-
-    print(u.delete_file('4321'))
-
-    # f = u.get_file('4321')
-    # print(f.read())
-    # f.close()
-    # print(u.file())
-    # dat = cl.auth('123456','123')
-    # print(dat)
